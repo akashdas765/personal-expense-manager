@@ -54,8 +54,10 @@ export default function GroupSelector() {
       {/* Sync button */}
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-white font-semibold text-sm">Groups ({groups.length})</p>
-          <p className="text-slate-400 text-xs">{expenses.length} expenses loaded for {monthRange.label}</p>
+          <p className="text-white font-semibold text-sm">
+            Groups ({groups.filter(g => expenses.some(e => e.group_id === g.id)).length} active)
+          </p>
+          <p className="text-slate-400 text-xs">{expenses.length} expenses · {monthRange.label}</p>
         </div>
         <button
           onClick={syncExpenses}
@@ -86,6 +88,8 @@ export default function GroupSelector() {
             const groupExpenses = expenses.filter(e => e.group_id === group.id);
             const myShare = groupExpenses.reduce((s, e) => s + e.myOwedShare, 0);
             const isOpen  = expanded[group.id];
+            // Hide groups with no activity this month
+            if (groupExpenses.length === 0) return null;
 
             return (
               <div key={group.id} className="bg-slate-800 rounded-xl overflow-hidden">
