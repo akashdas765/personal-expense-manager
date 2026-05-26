@@ -91,7 +91,10 @@ export default function SplitwisePage() {
                       <div className="w-8 text-center text-base">{getCategoryIcon(exp.category)}</div>
                       <div className="flex-1 min-w-0">
                         <p className="text-white text-sm font-medium truncate">{exp.description}</p>
-                        <p className="text-slate-500 text-xs mt-0.5">{exp.date?.substring(0, 10)} · {exp.category}</p>
+                        <p className="text-slate-500 text-xs mt-0.5">
+                          {exp.date?.substring(0, 10)}
+                          {groupName(exp.group_id) && <span className="ml-1.5">· {groupName(exp.group_id)}</span>}
+                        </p>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <p className="text-white text-sm font-semibold">{formatCurrency(exp.myOwedShare)}</p>
