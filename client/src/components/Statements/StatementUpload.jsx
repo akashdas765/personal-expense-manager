@@ -164,9 +164,24 @@ export default function StatementUpload({ onUploaded }) {
       {/* Loaded statements */}
       {state.statements.length > 0 && (
         <div>
-          <p className="text-slate-400 text-xs font-medium mb-2">
-            LOADED STATEMENTS ({state.statements.length})
-          </p>
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-slate-400 text-xs font-medium">
+              LOADED STATEMENTS ({state.statements.length})
+            </p>
+            <button
+              onClick={() => {
+                if (window.confirm('Clear ALL statements and transactions?')) {
+                  dispatch({ type: 'CLEAR_ALL' });
+                  setResults([]);
+                  setConfirming(null);
+                  showToast('All statements cleared');
+                }
+              }}
+              className="text-xs text-red-400 hover:text-red-300 flex items-center gap-1 transition-colors"
+            >
+              <Trash2 size={11} /> Clear all
+            </button>
+          </div>
           <div className="space-y-2">
             {state.statements.map(s => {
               const isConfirming = confirming === s.id;

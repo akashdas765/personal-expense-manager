@@ -16,8 +16,8 @@ export default function MatchReview() {
   const groups = state.splitwiseGroups;
   const groupName = id => groups.find(g => g.id === id)?.name;
 
-  // Only bank transactions (not splitwise-only rows)
-  const bankTxns = monthlyTransactions.filter(t => !t.isSplitOnly);
+  // Only real expense bank transactions (no splitwise-only rows, no payments/transfers)
+  const bankTxns = monthlyTransactions.filter(t => !t.isSplitOnly && !t.isPayment);
   const matched   = bankTxns.filter(t => t.isSplitwised);
   const unmatched = bankTxns.filter(t => !t.isSplitwised);
 

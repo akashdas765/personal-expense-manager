@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useCallback, useEffect } from 'r
 import { getMonthRange, prevMonth, nextMonth } from '../utils/formatters';
 import { matchTransactions, computeSummary } from '../utils/matcher';
 import { fetchSplitwiseUser, DEFAULT_API_KEY } from '../services/apiService';
+import { isPaymentTransaction } from '../utils/paymentDetector';
 
 const LS_KEY = 'expense_mgr_v1';
 
@@ -153,10 +154,21 @@ export function ExpenseProvider({ children }) {
     async function init() {
       try {
         const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-        if (saved.overrides)       dispatch({ type: 'HYDRATE', payload: { overrides: saved.overrides } });
-        if (saved.statements)      dispatch({ type: 'HYDRATE', payload: { statements: saved.statements } });
-        if (saved.bankTransactions?.length) {
-          dispatch({ type: 'ADD_BANK_TRANSACTIONS', payload: saved.bankTransactions });
+        if (saved.overrides)  dispatch({ type: 'HYDRATE', payload: { overrides: saved.overrides } });
+        if (saved.statements) dispatch({ type: 'HYDRATE', payload: { statements: saved.statements } });
+
+        // Re-run payment detection on load so any transactions uploaded before
+        // detection logic existed are correctly tagged (fixes stale localStorage data)
+        const allSaved = [
+          ...(saved.bankTransactions    || []),
+          ...(saved.paymentTransactions || []),
+        ].map(t => ({
+          ...t,
+          isPayment: t.isPayment || isPaymentTransaction(t.description || ''),
+        }));
+
+        if (allSaved.length) {
+          dispatch({ type: 'ADD_BANK_TRANSACTIONS', payload: allSaved });
         }
 
         // Auto-connect: use saved user or fetch fresh
@@ -186,7 +198,7 @@ export function ExpenseProvider({ children }) {
         paymentTransactions: state.paymentTransactions,
       }));
     } catch { /* ignore */ }
-  }, [state.splitwiseApiKey, state.splitwiseUser, state.overrides, state.statements, state.bankTransactions]);
+  }, [state.splitwiseApiKey, state.splitwiseUser, state.overrides, state.statements, state.bankTransactions, state.paymentTransactions]);
 
   const monthRange = getMonthRange(state.currentMonth);
 
