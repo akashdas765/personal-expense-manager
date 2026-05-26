@@ -9,7 +9,7 @@ import { getCategoryIcon } from '../utils/categoryDetector';
 const TABS = ['Upload', 'Manual Entry', 'Transactions'];
 
 export default function StatementsPage() {
-  const { state } = useExpense();
+  const { state, monthRange, monthlyTransactions } = useExpense();
   const [tab, setTab] = useState(0);
 
   const allBankTxns = state.bankTransactions;
@@ -21,11 +21,11 @@ export default function StatementsPage() {
       <div className="flex-1 overflow-y-auto pb-24">
         <div className="px-4 py-4 space-y-4">
 
-          {/* Stat bar */}
+          {/* Stat bar — scoped to selected month */}
           <div className="flex gap-3">
             <div className="flex-1 bg-slate-800 rounded-xl px-3 py-2.5">
-              <p className="text-white font-semibold">{allBankTxns.length}</p>
-              <p className="text-slate-400 text-xs">Total Transactions</p>
+              <p className="text-white font-semibold">{monthlyTransactions.length}</p>
+              <p className="text-slate-400 text-xs">This Month</p>
             </div>
             <div className="flex-1 bg-slate-800 rounded-xl px-3 py-2.5">
               <p className="text-white font-semibold">{state.statements.length}</p>
@@ -33,9 +33,9 @@ export default function StatementsPage() {
             </div>
             <div className="flex-1 bg-slate-800 rounded-xl px-3 py-2.5">
               <p className="text-white font-semibold">
-                {formatCurrency(allBankTxns.reduce((s, t) => s + t.amount, 0))}
+                {formatCurrency(monthlyTransactions.reduce((s, t) => s + (t.amount || 0), 0))}
               </p>
-              <p className="text-slate-400 text-xs">Gross Total</p>
+              <p className="text-slate-400 text-xs">Month Total</p>
             </div>
           </div>
 

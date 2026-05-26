@@ -174,8 +174,18 @@ export function ExpenseProvider({ children }) {
 
   const monthRange = getMonthRange(state.currentMonth);
 
+  // Filter matched transactions to ONLY the selected month
+  const monthlyTransactions = state.matchedTransactions.filter(t => {
+    if (!t.date) return false;
+    const d = t.date.substring(0, 10);
+    return d >= monthRange.start && d <= monthRange.end;
+  });
+
+  // Re-compute summary for the filtered month only
+  const monthlySummary = computeSummary(monthlyTransactions);
+
   return (
-    <ExpenseContext.Provider value={{ state, dispatch, monthRange }}>
+    <ExpenseContext.Provider value={{ state, dispatch, monthRange, monthlyTransactions, monthlySummary }}>
       {children}
     </ExpenseContext.Provider>
   );

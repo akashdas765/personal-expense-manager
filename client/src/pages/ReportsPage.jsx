@@ -26,9 +26,8 @@ function CustomTooltip({ active, payload, label }) {
 }
 
 export default function ReportsPage() {
-  const { state, monthRange } = useExpense();
+  const { state, monthRange, monthlyTransactions: txns, monthlySummary } = useExpense();
   const [tab, setTab] = useState(0);
-  const txns = state.matchedTransactions;
 
   // Category bar chart data
   const categoryData = useMemo(() => {

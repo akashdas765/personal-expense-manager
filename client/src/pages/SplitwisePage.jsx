@@ -6,7 +6,7 @@ import { formatCurrency } from '../utils/formatters';
 import { getCategoryIcon } from '../utils/categoryDetector';
 
 export default function SplitwisePage() {
-  const { state, monthRange } = useExpense();
+  const { state, monthRange, monthlyTransactions } = useExpense();
   const { splitwiseExpenses: expenses, splitwiseUser } = state;
 
   const totalOwed = expenses.reduce((s, e) => s + e.myOwedShare, 0);

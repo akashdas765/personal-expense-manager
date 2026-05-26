@@ -8,8 +8,8 @@ import { Link } from 'react-router-dom';
 import { ArrowRight, Zap } from 'lucide-react';
 
 export default function HomePage() {
-  const { state, monthRange } = useExpense();
-  const { matchedTransactions: txns, summary, splitwiseUser, bankTransactions } = state;
+  const { state, monthRange, monthlyTransactions: txns, monthlySummary: summary } = useExpense();
+  const { splitwiseUser, bankTransactions } = state;
 
   const noData = !bankTransactions.length && !state.splitwiseExpenses.length;
 
