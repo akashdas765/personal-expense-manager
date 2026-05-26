@@ -32,20 +32,24 @@ export default function StatementsPage() {
         <div className="px-4 py-4 space-y-4">
 
           {/* Stat bar */}
-          <div className="flex gap-3">
-            <div className="flex-1 bg-slate-800 rounded-xl px-3 py-2.5">
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-slate-800 rounded-xl px-3 py-2.5">
               <p className="text-white font-semibold">{bankTxns.length}</p>
-              <p className="text-slate-400 text-xs">This Month</p>
+              <p className="text-slate-400 text-xs">Expenses This Month</p>
             </div>
-            <div className="flex-1 bg-slate-800 rounded-xl px-3 py-2.5">
-              <p className="text-white font-semibold">{state.statements.length}</p>
-              <p className="text-slate-400 text-xs">Statements</p>
-            </div>
-            <div className="flex-1 bg-slate-800 rounded-xl px-3 py-2.5">
+            <div className="bg-slate-800 rounded-xl px-3 py-2.5">
               <p className="text-white font-semibold">
                 {formatCurrency(bankTxns.reduce((s, t) => s + (t.amount || 0), 0))}
               </p>
               <p className="text-slate-400 text-xs">Gross Total</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl px-3 py-2.5">
+              <p className="text-blue-400 font-semibold">{monthlyPayments.length}</p>
+              <p className="text-slate-400 text-xs">Payments Made</p>
+            </div>
+            <div className="bg-slate-800 rounded-xl px-3 py-2.5">
+              <p className="text-blue-400 font-semibold">{formatCurrency(paymentTotal)}</p>
+              <p className="text-slate-400 text-xs">Payments Total</p>
             </div>
           </div>
 
