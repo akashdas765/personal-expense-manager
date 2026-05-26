@@ -82,7 +82,24 @@ router.get('/expenses', async (req, res) => {
         };
       });
 
-    res.json({ expenses: enriched, currentUserId });
+    const paymentsReceived = (data.expenses || [])
+      .filter(e => !e.deleted_at && e.payment === true)
+      .flatMap(e => {
+        const userShare = (e.users || []).find(u => u.user_id === currentUserId);
+        const received  = parseFloat(userShare?.owed_share || 0);
+        if (received <= 0) return [];
+        const payer = (e.users || []).find(u => parseFloat(u.paid_share || 0) > 0);
+        return [{
+          id:          e.id,
+          description: e.description || 'Payment',
+          amount:      received,
+          date:        e.date,
+          paidBy:      payer?.user?.first_name || e.created_by?.first_name || 'Someone',
+          group_id:    e.group_id,
+        }];
+      });
+
+    res.json({ expenses: enriched, currentUserId, paymentsReceived });
   } catch (err) {
     res.status(err.response?.status || 500).json({
       error: err.response?.data?.error || err.message,

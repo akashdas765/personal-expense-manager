@@ -35,11 +35,12 @@ export default function GroupSelector() {
     setSyncing(true);
     dispatch({ type: 'SET_ERROR', key: 'splitwise', value: null });
     try {
-      const { expenses: exps } = await fetchSplitwiseExpenses(apiKey, {
+      const { expenses: exps, paymentsReceived } = await fetchSplitwiseExpenses(apiKey, {
         datedAfter:  monthRange.start,
         datedBefore: monthRange.end,
       });
       dispatch({ type: 'SET_SPLITWISE_EXPENSES', payload: exps });
+      dispatch({ type: 'SET_PAYMENTS_RECEIVED',  payload: paymentsReceived });
     } catch (e) {
       dispatch({ type: 'SET_ERROR', key: 'splitwise', value: e.message });
     } finally {

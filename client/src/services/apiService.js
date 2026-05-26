@@ -36,7 +36,11 @@ export async function fetchSplitwiseExpenses(apiKey, { datedAfter, datedBefore, 
   if (groupId)     params.group_id     = groupId;
 
   const { data } = await axios.get(url, { headers: swHeaders(apiKey), params });
-  return { expenses: data.expenses || [], currentUserId: data.currentUserId };
+  return {
+    expenses:         data.expenses         || [],
+    currentUserId:    data.currentUserId,
+    paymentsReceived: data.paymentsReceived || [],
+  };
 }
 
 // ── PDF Parse ─────────────────────────────────────────────────────────────────

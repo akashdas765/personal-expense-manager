@@ -16,8 +16,9 @@ const initialState = {
   currentMonth: new Date(),
 
   // Raw data
-  splitwiseExpenses: [],  // fetched from Splitwise
-  bankTransactions:  [],  // uploaded / manually entered
+  splitwiseExpenses:   [],  // fetched from Splitwise
+  paymentsReceived:    [],  // payments received from others in Splitwise
+  bankTransactions:    [],  // uploaded / manually entered
 
   // Computed
   matchedTransactions: [],
@@ -56,6 +57,9 @@ function reducer(state, action) {
         summary:             computeSummary(matched),
       };
     }
+
+    case 'SET_PAYMENTS_RECEIVED':
+      return { ...state, paymentsReceived: action.payload };
 
     case 'ADD_BANK_TRANSACTIONS': {
       const existing = state.bankTransactions.filter(t => !action.payload.some(n => n.id === t.id));
