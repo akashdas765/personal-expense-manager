@@ -1,13 +1,14 @@
 import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { getMonthRange, prevMonth, nextMonth } from '../utils/formatters';
 import { matchTransactions, computeSummary } from '../utils/matcher';
+import { fetchSplitwiseUser, DEFAULT_API_KEY } from '../services/apiService';
 
 const LS_KEY = 'expense_mgr_v1';
 
 // ── State shape ───────────────────────────────────────────────────────────────
 const initialState = {
-  // Auth
-  splitwiseApiKey: '',
+  // Auth — key is hardcoded; app auto-connects on first load
+  splitwiseApiKey: DEFAULT_API_KEY,
   splitwiseUser:   null,
   splitwiseGroups: [],
 
@@ -132,18 +133,31 @@ const ExpenseContext = createContext(null);
 export function ExpenseProvider({ children }) {
   const [state, dispatch] = useReducer(reducer, initialState);
 
-  // Persist key data to localStorage
+  // Hydrate from localStorage + auto-connect Splitwise
   useEffect(() => {
-    try {
-      const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
-      if (saved.splitwiseApiKey) dispatch({ type: 'SET_API_KEY', payload: saved.splitwiseApiKey });
-      if (saved.splitwiseUser)   dispatch({ type: 'SET_SPLITWISE_USER', payload: saved.splitwiseUser });
-      if (saved.overrides)       dispatch({ type: 'HYDRATE', payload: { overrides: saved.overrides } });
-      if (saved.statements)      dispatch({ type: 'HYDRATE', payload: { statements: saved.statements } });
-      if (saved.bankTransactions?.length) {
-        dispatch({ type: 'ADD_BANK_TRANSACTIONS', payload: saved.bankTransactions });
-      }
-    } catch { /* ignore */ }
+    async function init() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(LS_KEY) || '{}');
+        if (saved.overrides)       dispatch({ type: 'HYDRATE', payload: { overrides: saved.overrides } });
+        if (saved.statements)      dispatch({ type: 'HYDRATE', payload: { statements: saved.statements } });
+        if (saved.bankTransactions?.length) {
+          dispatch({ type: 'ADD_BANK_TRANSACTIONS', payload: saved.bankTransactions });
+        }
+
+        // Auto-connect: use saved user or fetch fresh
+        const user = saved.splitwiseUser || null;
+        if (user) {
+          dispatch({ type: 'SET_SPLITWISE_USER', payload: user });
+        } else {
+          // First visit — auto-connect with hardcoded key
+          try {
+            const freshUser = await fetchSplitwiseUser(DEFAULT_API_KEY);
+            dispatch({ type: 'SET_SPLITWISE_USER', payload: freshUser });
+          } catch { /* silently fail if offline or key invalid */ }
+        }
+      } catch { /* ignore */ }
+    }
+    init();
   }, []);
 
   useEffect(() => {
