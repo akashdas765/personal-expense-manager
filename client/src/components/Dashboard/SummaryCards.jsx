@@ -1,4 +1,4 @@
-import { TrendingDown, Split, Wallet, PiggyBank } from 'lucide-react';
+import { TrendingDown, Split, Wallet, PiggyBank, Receipt } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { useExpense } from '../../context/ExpenseContext';
 
@@ -26,8 +26,6 @@ export default function SummaryCards({ summary, transactions }) {
   const { totalEffective, totalSavings, splitCount, personalCount } = summary;
 
   // True Splitwise share = sum of myOwedShare across ALL Splitwise expenses
-  // for the month (already month-filtered when fetched). This is what you
-  // actually owe via splits, regardless of whether bank txns matched.
   const splitwiseOwed = (state.splitwiseExpenses || [])
     .reduce((s, e) => s + (e.myOwedShare || 0), 0);
 
@@ -36,8 +34,28 @@ export default function SummaryCards({ summary, transactions }) {
     .filter(t => !t.isSplitwised && !t.isSplitOnly)
     .reduce((s, t) => s + (t.effectiveAmount || 0), 0);
 
+  // Total spend = everything you owe this month
+  const totalSpend = splitwiseOwed + personalTotal;
+
   return (
     <div className="grid grid-cols-2 gap-3">
+      {/* Full-width total at the top */}
+      <div className="col-span-2 bg-gradient-to-r from-slate-700 to-slate-800 rounded-2xl p-4 relative overflow-hidden border border-slate-600/40">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-xs font-medium text-slate-400 mb-1">Total Spend This Month</p>
+            <p className="text-3xl font-bold text-white tracking-tight">{formatCurrency(totalSpend)}</p>
+            <p className="text-xs text-slate-400 mt-1">
+              {formatCurrency(splitwiseOwed)} splits &nbsp;+&nbsp; {formatCurrency(personalTotal)} personal
+            </p>
+          </div>
+          <div className="p-3 rounded-2xl bg-white/10">
+            <Receipt size={22} className="text-white" />
+          </div>
+        </div>
+        <div className="absolute -right-6 -bottom-6 w-28 h-28 rounded-full bg-white/5" />
+      </div>
+
       <Card
         icon={Wallet}
         label="My Actual Spend"
