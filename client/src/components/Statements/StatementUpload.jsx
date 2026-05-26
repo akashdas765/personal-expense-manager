@@ -1,7 +1,7 @@
 import { useRef, useState } from 'react';
 import { Upload, FileText, X, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { useExpense } from '../../context/ExpenseContext';
-import { parsePdfStatement } from '../../services/apiService';
+import { parsePdfClient } from '../../utils/pdfParser';
 import { parseCsv } from '../../utils/csvParser';
 import { detectCategory } from '../../utils/categoryDetector';
 
@@ -58,7 +58,7 @@ export default function StatementUpload() {
         let transactions = [];
 
         if (ext === 'pdf') {
-          const res = await parsePdfStatement(file);
+          const res = await parsePdfClient(file);
           transactions = (res.transactions || []).map(t => ({
             ...t,
             id:     `${sourceId}-${t.id}`,
