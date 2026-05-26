@@ -4,6 +4,7 @@
  * Capital One, Citi, Amex, Discover.
  */
 import { detectCategory } from './categoryDetector';
+import { isPaymentTransaction } from './paymentDetector';
 
 // ── Date helpers ──────────────────────────────────────────────────────────────
 function normalizeDate(raw) {
@@ -81,6 +82,7 @@ function parsePdfText(text) {
       description: desc,
       amount,
       category:    detectCategory(desc),
+      isPayment:   isPaymentTransaction(desc),
       source:      'pdf',
     });
   }

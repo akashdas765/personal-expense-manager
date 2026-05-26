@@ -1,5 +1,6 @@
 import Papa from 'papaparse';
 import { detectCategory } from './categoryDetector';
+import { isPaymentTransaction } from './paymentDetector';
 
 /**
  * Smart CSV parser that handles many common bank/CC export formats:
@@ -107,6 +108,7 @@ export function parseCsv(text, sourceName = 'csv') {
             amount,
             source:      sourceName,
             category:    detectCategory(desc),
+            isPayment:   isPaymentTransaction(desc),
           });
         }
 

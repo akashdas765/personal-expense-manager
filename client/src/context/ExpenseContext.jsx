@@ -18,7 +18,8 @@ const initialState = {
   // Raw data
   splitwiseExpenses:   [],  // fetched from Splitwise
   paymentsReceived:    [],  // payments received from others in Splitwise
-  bankTransactions:    [],  // uploaded / manually entered
+  bankTransactions:    [],  // real expense transactions from statements
+  paymentTransactions: [],  // credit card payments / transfers (not expenses)
 
   // Computed
   matchedTransactions: [],
@@ -62,23 +63,33 @@ function reducer(state, action) {
       return { ...state, paymentsReceived: action.payload };
 
     case 'ADD_BANK_TRANSACTIONS': {
-      const existing = state.bankTransactions.filter(t => !action.payload.some(n => n.id === t.id));
-      const combined = [...existing, ...action.payload];
-      const matched  = matchTransactions(combined, state.splitwiseExpenses, state.overrides);
+      // Split incoming into real expenses vs payment/transfer transactions
+      const incoming        = action.payload;
+      const newExpenses     = incoming.filter(t => !t.isPayment);
+      const newPayments     = incoming.filter(t =>  t.isPayment);
+
+      const existingExp  = state.bankTransactions.filter(t => !newExpenses.some(n => n.id === t.id));
+      const existingPay  = state.paymentTransactions.filter(t => !newPayments.some(n => n.id === t.id));
+      const combined     = [...existingExp, ...newExpenses];
+      const matched      = matchTransactions(combined, state.splitwiseExpenses, state.overrides);
+
       return {
         ...state,
         bankTransactions:    combined,
+        paymentTransactions: [...existingPay, ...newPayments],
         matchedTransactions: matched,
         summary:             computeSummary(matched),
       };
     }
 
     case 'REMOVE_STATEMENT': {
-      const updated = state.bankTransactions.filter(t => t.source !== action.payload);
-      const matched = matchTransactions(updated, state.splitwiseExpenses, state.overrides);
+      const updated     = state.bankTransactions.filter(t => t.source !== action.payload);
+      const updatedPays = state.paymentTransactions.filter(t => t.source !== action.payload);
+      const matched     = matchTransactions(updated, state.splitwiseExpenses, state.overrides);
       return {
         ...state,
         bankTransactions:    updated,
+        paymentTransactions: updatedPays,
         statements:          state.statements.filter(s => s.id !== action.payload),
         matchedTransactions: matched,
         summary:             computeSummary(matched),
@@ -167,11 +178,12 @@ export function ExpenseProvider({ children }) {
   useEffect(() => {
     try {
       localStorage.setItem(LS_KEY, JSON.stringify({
-        splitwiseApiKey:  state.splitwiseApiKey,
-        splitwiseUser:    state.splitwiseUser,
-        overrides:        state.overrides,
-        statements:       state.statements,
-        bankTransactions: state.bankTransactions,
+        splitwiseApiKey:     state.splitwiseApiKey,
+        splitwiseUser:       state.splitwiseUser,
+        overrides:           state.overrides,
+        statements:          state.statements,
+        bankTransactions:    state.bankTransactions,
+        paymentTransactions: state.paymentTransactions,
       }));
     } catch { /* ignore */ }
   }, [state.splitwiseApiKey, state.splitwiseUser, state.overrides, state.statements, state.bankTransactions]);
