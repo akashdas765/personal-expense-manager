@@ -10,7 +10,7 @@ import { getCategoryIcon } from '../utils/categoryDetector';
 const TABS = ['Upload', 'Manual Entry', 'Review', 'All Txns', 'Payments'];
 
 export default function StatementsPage() {
-  const { state, monthRange, monthlyTransactions } = useExpense();
+  const { state, monthRange, monthlyTransactions, monthlySummary } = useExpense();
   const [tab, setTab] = useState(0);
 
   const bankTxns    = monthlyTransactions.filter(t => !t.isSplitOnly);
@@ -42,6 +42,18 @@ export default function StatementsPage() {
                 {formatCurrency(bankTxns.reduce((s, t) => s + (t.amount || 0), 0))}
               </p>
               <p className="text-slate-400 text-xs">Gross Total</p>
+            </div>
+            {/* My actual spend: matched→my share, unmatched→full amount */}
+            <div className="col-span-2 bg-brand-900/40 border border-brand-700/40 rounded-xl px-3 py-2.5">
+              <div className="flex items-baseline justify-between">
+                <p className="text-brand-300 font-bold text-lg">{formatCurrency(monthlySummary.totalEffective)}</p>
+                {monthlySummary.totalSavings > 0.5 && (
+                  <p className="text-emerald-400 text-xs font-medium">
+                    -{formatCurrency(monthlySummary.totalSavings)} saved via splits
+                  </p>
+                )}
+              </div>
+              <p className="text-slate-400 text-xs">My Actual Spend</p>
             </div>
             <div className="bg-slate-800 rounded-xl px-3 py-2.5">
               <p className="text-blue-400 font-semibold">{monthlyPayments.length}</p>
