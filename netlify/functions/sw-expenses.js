@@ -22,8 +22,10 @@ exports.handler = async (event) => {
     const expRes  = await fetch(url.toString(), { headers: HEADERS });
     const expData = await expRes.json();
 
+    const SKIP_DESC = /settle|settlement|reimburs|payback|pay back|paid back/i;
+
     const enriched = (expData.expenses || [])
-      .filter(e => !e.deleted_at && !e.payment)
+      .filter(e => !e.deleted_at && !e.payment && !SKIP_DESC.test(e.description || ''))
       .map(e => {
         const userShare = (e.users || []).find(u => u.user_id === currentUserId);
         return {

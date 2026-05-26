@@ -61,8 +61,10 @@ router.get('/expenses', async (req, res) => {
     });
     const currentUserId = currentUserResp.data.user.id;
 
+    const SKIP_DESC = /settle|settlement|reimburs|payback|pay back|paid back/i;
+
     const enriched = (data.expenses || [])
-      .filter(e => !e.deleted_at && !e.payment)
+      .filter(e => !e.deleted_at && !e.payment && !SKIP_DESC.test(e.description || ''))
       .map(e => {
         const userShare = (e.users || []).find(u => u.user_id === currentUserId);
         return {
