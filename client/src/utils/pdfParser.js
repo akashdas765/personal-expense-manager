@@ -6,8 +6,13 @@
  * Key feature: tracks section headers (PAYMENTS, PURCHASES, FEES…)
  * so transactions in a "Payments" section are correctly tagged isPayment=true.
  */
+import * as pdfjsLib from 'pdfjs-dist';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { detectCategory } from './categoryDetector';
 import { isPaymentTransaction } from './paymentDetector';
+
+// Point pdfjs to the locally bundled worker (no CDN needed)
+pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 // ── Section detection ─────────────────────────────────────────────────────────
 // These headers in a PDF indicate we've entered a "payments / credits" section
@@ -111,11 +116,6 @@ function parsePdfText(text) {
 
 // ── Main export ───────────────────────────────────────────────────────────────
 export async function parsePdfClient(file) {
-  const pdfjsLib = await import('pdfjs-dist');
-
-  pdfjsLib.GlobalWorkerOptions.workerSrc =
-    `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
-
   const arrayBuffer = await file.arrayBuffer();
   const pdf         = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
 
