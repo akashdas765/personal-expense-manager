@@ -11,7 +11,9 @@ const TABS = ['Groups', 'All Expenses', 'Received'];
 
 export default function SplitwisePage() {
   const { state, monthRange, monthlyTransactions } = useExpense();
-  const { splitwiseExpenses: expenses, splitwiseUser, paymentsReceived = [] } = state;
+  const { splitwiseExpenses: expenses, splitwiseUser, splitwiseGroups: groups, paymentsReceived = [] } = state;
+
+  const groupName = (id) => groups.find(g => g.id === id)?.name || null;
   const [tab, setTab] = useState(0);
 
   // Filter payments received to current month
@@ -130,7 +132,12 @@ export default function SplitwisePage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-white text-sm font-medium">{p.paidBy} paid you</p>
-                          <p className="text-slate-500 text-xs mt-0.5">{formatShortDate(p.date)}</p>
+                          <p className="text-slate-500 text-xs mt-0.5">
+                            {formatShortDate(p.date)}
+                            {groupName(p.group_id) && (
+                              <span className="ml-1.5 text-slate-600">· {groupName(p.group_id)}</span>
+                            )}
+                          </p>
                         </div>
                         <p className="text-emerald-400 text-base font-bold flex-shrink-0">
                           +{formatCurrency(p.amount)}
