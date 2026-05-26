@@ -1,7 +1,8 @@
 import { TrendingDown, Split, Wallet, PiggyBank } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
+import { useExpense } from '../../context/ExpenseContext';
 
-function Card({ icon: Icon, label, value, sub, color, trend }) {
+function Card({ icon: Icon, label, value, sub, color }) {
   return (
     <div className={`rounded-2xl p-4 ${color} relative overflow-hidden`}>
       <div className="flex items-start justify-between">
@@ -21,19 +22,25 @@ function Card({ icon: Icon, label, value, sub, color, trend }) {
 }
 
 export default function SummaryCards({ summary, transactions }) {
-  const { totalEffective, totalOriginal, totalSavings, splitCount, personalCount } = summary;
-  const splitwiseTotal = transactions
-    .filter(t => t.isSplitwised && !t.isSplitOnly)
-    .reduce((s, t) => s + (t.effectiveAmount || 0), 0);
+  const { state } = useExpense();
+  const { totalEffective, totalSavings, splitCount, personalCount } = summary;
+
+  // True Splitwise share = sum of myOwedShare across ALL Splitwise expenses
+  // for the month (already month-filtered when fetched). This is what you
+  // actually owe via splits, regardless of whether bank txns matched.
+  const splitwiseOwed = (state.splitwiseExpenses || [])
+    .reduce((s, e) => s + (e.myOwedShare || 0), 0);
+
+  // Personal-only spend = bank transactions NOT matched to Splitwise
   const personalTotal = transactions
-    .filter(t => !t.isSplitwised)
+    .filter(t => !t.isSplitwised && !t.isSplitOnly)
     .reduce((s, t) => s + (t.effectiveAmount || 0), 0);
 
   return (
     <div className="grid grid-cols-2 gap-3">
       <Card
         icon={Wallet}
-        label="Total My Expenses"
+        label="My Actual Spend"
         value={formatCurrency(totalEffective)}
         sub={`${splitCount + personalCount} transactions`}
         color="bg-gradient-to-br from-brand-600 to-brand-800 text-white"
@@ -47,16 +54,16 @@ export default function SummaryCards({ summary, transactions }) {
       />
       <Card
         icon={Split}
-        label="Splitwise Share"
-        value={formatCurrency(splitwiseTotal)}
-        sub="after splits applied"
+        label="Splitwise My Share"
+        value={formatCurrency(splitwiseOwed)}
+        sub={`${state.splitwiseExpenses?.length || 0} group expenses`}
         color="bg-gradient-to-br from-violet-600 to-violet-800 text-white"
       />
       <Card
         icon={TrendingDown}
-        label="Personal Expenses"
+        label="Personal Only"
         value={formatCurrency(personalTotal)}
-        sub={`${personalCount} full-cost txns`}
+        sub={`${personalCount} unmatched txns`}
         color="bg-gradient-to-br from-orange-500 to-orange-700 text-white"
       />
     </div>
