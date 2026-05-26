@@ -29,34 +29,48 @@ export default function ReportsPage() {
   const { state, monthRange, monthlyTransactions: txns, monthlySummary } = useExpense();
   const [tab, setTab] = useState(0);
 
-  // Category bar chart data
-  const categoryData = useMemo(() => {
+  // ── True totals ───────────────────────────────────────────────────────────────
+  // Split share = all Splitwise expenses' myOwedShare for the month
+  const splitwiseOwed = useMemo(() =>
+    (state.splitwiseExpenses || []).reduce((s, e) => s + (e.myOwedShare || 0), 0),
+    [state.splitwiseExpenses]
+  );
+
+  // Personal = bank transactions NOT matched to Splitwise
+  const personalTotal = useMemo(() =>
+    txns.filter(t => !t.isSplitwised && !t.isSplitOnly)
+        .reduce((s, t) => s + (t.effectiveAmount || 0), 0),
+    [txns]
+  );
+
+  // Savings = only from bank-matched rows (isSplitOnly inflates this massively)
+  const realSavings = useMemo(() =>
+    txns.filter(t => !t.isSplitOnly)
+        .reduce((s, t) => s + (t.savings || 0), 0),
+    [txns]
+  );
+
+  // Grand total this month
+  const totalSpend = splitwiseOwed + personalTotal;
+
+  // ── Category data ─────────────────────────────────────────────────────────────
+  // Use ALL txns (including splitwise-only) so every expense is categorised
+  const { categoryData, categoryTotal } = useMemo(() => {
     const map = groupByCategory(txns);
-    return Object.entries(map)
+    const data = Object.entries(map)
       .map(([cat, { total }]) => ({ cat, total: parseFloat(total.toFixed(2)) }))
       .filter(d => d.total > 0)
-      .sort((a, b) => b.total - a.total)
-      .slice(0, 8);
+      .sort((a, b) => b.total - a.total);
+    const catTotal = data.reduce((s, d) => s + d.total, 0);
+    return { categoryData: data.slice(0, 8), categoryTotal: catTotal };
   }, [txns]);
 
-  // Split vs Personal comparison
-  const comparisonData = useMemo(() => {
-    const split    = txns.filter(t => t.isSplitwised && !t.isSplitOnly).reduce((s,t) => s + (t.effectiveAmount||0), 0);
-    const personal = txns.filter(t => !t.isSplitwised).reduce((s,t) => s + (t.effectiveAmount||0), 0);
-    const saved    = txns.reduce((s,t) => s + (t.savings||0), 0);
-    return [
-      { name: 'Split Share',     value: parseFloat(split.toFixed(2)),    fill: '#7c3aed' },
-      { name: 'Personal',        value: parseFloat(personal.toFixed(2)), fill: '#ea580c' },
-      { name: 'Saved via Split', value: parseFloat(saved.toFixed(2)),    fill: '#10b981' },
-    ];
-  }, [txns]);
-
-  // Weekly trend
+  // ── Weekly trend ──────────────────────────────────────────────────────────────
   const weeklyData = useMemo(() => {
     const weeks = {};
     for (const t of txns) {
       if (!t.date) continue;
-      const d = new Date(t.date);
+      const d    = new Date(t.date);
       const week = `W${Math.ceil(d.getDate() / 7)}`;
       if (!weeks[week]) weeks[week] = { week, split: 0, personal: 0 };
       if (t.isSplitwised) weeks[week].split    += t.effectiveAmount || 0;
@@ -69,9 +83,15 @@ export default function ReportsPage() {
     }));
   }, [txns]);
 
-  const totalSavings = txns.reduce((s,t) => s + (t.savings||0), 0);
   const matchedCount = txns.filter(t => t.isSplitwised && !t.isSplitOnly).length;
   const bankCount    = txns.filter(t => !t.isSplitOnly).length;
+
+  // Split vs Personal comparison bars — use true values
+  const comparisonData = [
+    { name: 'Splitwise Share', value: parseFloat(splitwiseOwed.toFixed(2)), fill: '#7c3aed' },
+    { name: 'Personal Only',   value: parseFloat(personalTotal.toFixed(2)), fill: '#ea580c' },
+    { name: 'Saved via Split', value: parseFloat(realSavings.toFixed(2)),   fill: '#10b981' },
+  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-slate-950">
@@ -95,6 +115,16 @@ export default function ReportsPage() {
           {/* ── SUMMARY TAB ── */}
           {tab === 0 && (
             <div className="space-y-4">
+
+              {/* Total spend banner */}
+              <div className="bg-gradient-to-r from-slate-700 to-slate-800 border border-slate-600/40 rounded-2xl p-4">
+                <p className="text-slate-400 text-xs font-medium mb-1">TOTAL SPEND — {monthRange.label}</p>
+                <p className="text-white text-3xl font-bold">{formatCurrency(totalSpend)}</p>
+                <p className="text-slate-400 text-xs mt-1">
+                  {formatCurrency(splitwiseOwed)} splits &nbsp;+&nbsp; {formatCurrency(personalTotal)} personal
+                </p>
+              </div>
+
               {/* Split vs Personal bars */}
               <div className="bg-slate-900 rounded-2xl p-4">
                 <h3 className="text-white font-semibold text-sm mb-4">Split vs Personal</h3>
@@ -102,11 +132,18 @@ export default function ReportsPage() {
                   {comparisonData.map(({ name, value, fill }) => {
                     const max = Math.max(...comparisonData.map(d => d.value), 1);
                     const pct = (value / max) * 100;
+                    const pctOfTotal = totalSpend > 0 && name !== 'Saved via Split'
+                      ? Math.round((value / totalSpend) * 100) : null;
                     return (
                       <div key={name}>
                         <div className="flex justify-between text-xs mb-1.5">
                           <span className="text-slate-400">{name}</span>
-                          <span className="text-white font-medium">{formatCurrency(value)}</span>
+                          <div className="flex items-center gap-2">
+                            {pctOfTotal !== null && (
+                              <span className="text-slate-500">{pctOfTotal}%</span>
+                            )}
+                            <span className="text-white font-medium">{formatCurrency(value)}</span>
+                          </div>
                         </div>
                         <div className="h-2 bg-slate-800 rounded-full overflow-hidden">
                           <div className="h-full rounded-full transition-all duration-700"
@@ -120,10 +157,13 @@ export default function ReportsPage() {
 
               {/* Category bar chart */}
               <div className="bg-slate-900 rounded-2xl p-4">
-                <h3 className="text-white font-semibold text-sm mb-3">Spending by Category</h3>
+                <div className="flex items-baseline justify-between mb-3">
+                  <h3 className="text-white font-semibold text-sm">Spending by Category</h3>
+                  <span className="text-slate-400 text-xs">{formatCurrency(categoryTotal)} total</span>
+                </div>
                 {categoryData.length > 0 ? (
                   <>
-                    <ResponsiveContainer width="100%" height={220}>
+                    <ResponsiveContainer width="100%" height={Math.max(180, categoryData.length * 32)}>
                       <BarChart data={categoryData} layout="vertical"
                                 margin={{ left: 8, right: 8, top: 0, bottom: 0 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" horizontal={false} />
@@ -131,7 +171,7 @@ export default function ReportsPage() {
                                tickLine={false} axisLine={false}
                                tickFormatter={v => v >= 1000 ? `$${(v/1000).toFixed(1)}k` : `$${v}`} />
                         <YAxis type="category" dataKey="cat" tick={{ fill: '#94a3b8', fontSize: 11 }}
-                               tickLine={false} axisLine={false} width={82}
+                               tickLine={false} axisLine={false} width={90}
                                tickFormatter={v => `${getCategoryIcon(v)} ${v.split(' ')[0]}`} />
                         <Tooltip content={<CustomTooltip />} cursor={{ fill: '#1e293b' }} />
                         <Bar dataKey="total" name="Spent" radius={[0, 4, 4, 0]}>
@@ -142,21 +182,52 @@ export default function ReportsPage() {
                       </BarChart>
                     </ResponsiveContainer>
 
-                    {/* Category legend list */}
-                    <div className="mt-3 space-y-2">
+                    {/* Category legend — % of TOTAL SPEND */}
+                    <div className="mt-4 space-y-2.5">
                       {categoryData.map(({ cat, total }) => {
-                        const totalAll = categoryData.reduce((s, d) => s + d.total, 0);
-                        const pct = totalAll ? Math.round((total / totalAll) * 100) : 0;
+                        const pct = totalSpend > 0 ? Math.round((total / totalSpend) * 100) : 0;
+                        const barPct = categoryData[0]?.total > 0
+                          ? (total / categoryData[0].total) * 100 : 0;
                         return (
-                          <div key={cat} className="flex items-center gap-2">
-                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                                 style={{ background: getCategoryColor(cat) }} />
-                            <span className="text-slate-300 text-xs flex-1">{getCategoryIcon(cat)} {cat}</span>
-                            <span className="text-slate-500 text-xs">{pct}%</span>
-                            <span className="text-white text-xs font-medium">{formatCurrency(total)}</span>
+                          <div key={cat}>
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="w-2.5 h-2.5 rounded-full flex-shrink-0"
+                                   style={{ background: getCategoryColor(cat) }} />
+                              <span className="text-slate-300 text-xs flex-1">
+                                {getCategoryIcon(cat)} {cat}
+                              </span>
+                              <span className="text-slate-500 text-xs w-8 text-right">{pct}%</span>
+                              <span className="text-white text-xs font-medium w-16 text-right">
+                                {formatCurrency(total)}
+                              </span>
+                            </div>
+                            {/* mini progress bar */}
+                            <div className="ml-4 h-1 bg-slate-800 rounded-full overflow-hidden">
+                              <div className="h-full rounded-full transition-all duration-500"
+                                   style={{ width: `${barPct}%`, background: getCategoryColor(cat) }} />
+                            </div>
                           </div>
                         );
                       })}
+                      {/* Show remaining if more than 8 categories */}
+                      {(() => {
+                        const shownTotal = categoryData.reduce((s, d) => s + d.total, 0);
+                        const remaining = totalSpend - shownTotal;
+                        if (remaining > 1) {
+                          const pct = Math.round((remaining / totalSpend) * 100);
+                          return (
+                            <div className="flex items-center gap-2 pt-1 border-t border-slate-800">
+                              <div className="w-2.5 h-2.5 rounded-full bg-slate-600 flex-shrink-0" />
+                              <span className="text-slate-500 text-xs flex-1">Other categories</span>
+                              <span className="text-slate-500 text-xs w-8 text-right">{pct}%</span>
+                              <span className="text-slate-500 text-xs font-medium w-16 text-right">
+                                {formatCurrency(remaining)}
+                              </span>
+                            </div>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   </>
                 ) : (
@@ -195,12 +266,12 @@ export default function ReportsPage() {
               {/* Savings insight */}
               <div className="bg-gradient-to-br from-emerald-900/40 to-teal-900/40 border border-emerald-700/30 rounded-2xl p-4">
                 <h3 className="text-emerald-400 font-semibold text-sm mb-2">💰 Savings Insight</h3>
-                <p className="text-white text-2xl font-bold">{formatCurrency(totalSavings)}</p>
+                <p className="text-white text-2xl font-bold">{formatCurrency(realSavings)}</p>
                 <p className="text-slate-400 text-xs mt-1">
                   saved in {monthRange.label} via Splitwise — only your fair share counted.
                 </p>
                 <p className="text-slate-500 text-xs mt-2">
-                  {matchedCount} of {bankCount} transactions matched to Splitwise expenses
+                  {matchedCount} of {bankCount} bank transactions matched to Splitwise
                 </p>
               </div>
             </div>
