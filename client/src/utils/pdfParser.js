@@ -40,12 +40,18 @@ function normalizeDate(raw) {
   return null;
 }
 
+// ── Credit / refund detection ─────────────────────────────────────────────────
+// Parenthetical  → (3.80)      = credit in purchases section
+// Explicit minus → -3.80       = credit/refund
+// CR suffix      → 3.80 CR     = credit
+// Negative sign before $       → -$3.80
+const CREDIT_LINE_RE = /(?:^|[\s(])-\$?[\d,]+\.\d{2}|[\d,]+\.\d{2}\s*CR\b|\(\s*\$?[\d,]+\.\d{2}\s*\)/i;
+
 // ── Text → transactions ───────────────────────────────────────────────────────
 function parsePdfText(text) {
   const lines        = text.split('\n').map(l => l.trim()).filter(Boolean);
   const transactions = [];
   const dateRe       = /\b(\d{1,2}\/\d{1,2}(?:\/\d{2,4})?)\b/;
-  const negRe        = /\((\d[\d,.]*\.\d{2})\)/;
 
   let inPaymentSection = false; // tracks current PDF section
 
@@ -69,7 +75,12 @@ function parsePdfText(text) {
     const dateMatch = trimmed.match(dateRe);
     if (!dateMatch) continue;
 
-    // Collect dollar amounts
+    // ── Skip credits / refunds (not in a payment section) ────────────────────
+    // In the PURCHASES section, negative/parenthetical amounts are refunds back
+    // to the card — they reduce your balance but are not expenses.
+    if (!inPaymentSection && CREDIT_LINE_RE.test(trimmed)) continue;
+
+    // Collect positive dollar amounts only
     const amounts = [];
     let m;
     const re = /\$?([\d,]+\.\d{2})/g;
@@ -77,8 +88,6 @@ function parsePdfText(text) {
       const v = parseFloat(m[1].replace(/,/g, ''));
       if (!isNaN(v) && v > 0) amounts.push(v);
     }
-    const negMatch = trimmed.match(negRe);
-    if (negMatch) amounts.push(parseFloat(negMatch[1].replace(/,/g, '')));
     if (!amounts.length) continue;
 
     // Description
