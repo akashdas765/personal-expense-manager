@@ -40,7 +40,7 @@ function UploadZone({ onFiles, uploading }) {
   );
 }
 
-export default function StatementUpload() {
+export default function StatementUpload({ onUploaded }) {
   const { state, dispatch } = useExpense();
   const [uploading, setUploading] = useState(false);
   const [results, setResults]     = useState([]); // [{ name, count, status, error }]
@@ -92,6 +92,8 @@ export default function StatementUpload() {
 
     setResults(r => [...r, ...newResults]);
     setUploading(false);
+    // Auto-jump to Review tab if any file succeeded
+    if (newResults.some(r => r.status === 'ok')) onUploaded?.();
   }
 
   function removeStatement(s) {
