@@ -1,13 +1,14 @@
 [build]
-  base      = "client"
-  command   = "npm run build"
-  publish   = "dist"
-  functions = "../netlify/functions"
+  base    = "client"
+  command = "npm run build"
+  publish = "dist"
 
-[[redirects]]
-  from   = "/api/*"
-  to     = "/.netlify/functions/:splat"
-  status = 200
+[functions]
+  directory = "netlify/functions"
+  node_bundler = "esbuild"
+
+[context.production.environment]
+  NODE_VERSION = "18"
 
 [[redirects]]
   from   = "/*"
