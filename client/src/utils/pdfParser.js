@@ -7,12 +7,12 @@
  * so transactions in a "Payments" section are correctly tagged isPayment=true.
  */
 import * as pdfjsLib from 'pdfjs-dist';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { detectCategory } from './categoryDetector';
 import { isPaymentTransaction } from './paymentDetector';
 
-// Point pdfjs to the locally bundled worker (no CDN needed)
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+// Worker is copied to public/ by vite.config.js at startup so it's
+// served as a plain static file in both dev and prod — no CDN needed.
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 // ── Section detection ─────────────────────────────────────────────────────────
 // These headers in a PDF indicate we've entered a "payments / credits" section
