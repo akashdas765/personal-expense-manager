@@ -169,6 +169,27 @@ export function ExpenseProvider({ children }) {
 
         if (allSaved.length) {
           dispatch({ type: 'ADD_BANK_TRANSACTIONS', payload: allSaved });
+
+          // Auto-navigate to the most recent month that has transactions
+          // so opening the app in June doesn't show empty May data
+          const dates = allSaved
+            .filter(t => !t.isPayment && t.date)
+            .map(t => t.date.substring(0, 7))   // "YYYY-MM"
+            .sort()
+            .reverse();
+          if (dates.length) {
+            const [year, month] = dates[0].split('-').map(Number);
+            const mostRecent = new Date(year, month - 1, 1);
+            const now = new Date();
+            // Only switch if the most recent data month is before today's month
+            if (
+              mostRecent.getFullYear() < now.getFullYear() ||
+              (mostRecent.getFullYear() === now.getFullYear() &&
+               mostRecent.getMonth() < now.getMonth())
+            ) {
+              dispatch({ type: 'SET_MONTH', payload: mostRecent });
+            }
+          }
         }
 
         // Auto-connect: use saved user or fetch fresh
