@@ -59,7 +59,9 @@ export default function SplitwisePicker({ transaction, onClose }) {
       type: 'OVERRIDE_TRANSACTION',
       payload: {
         id:   transaction.id,
-        data: { splitwiseId: exp.id, forcedUnmatched: false },
+        // Store full expense object so matcher can resolve it even if this
+        // expense is from a different month and not in state.splitwiseExpenses
+        data: { splitwiseId: exp.id, forcedUnmatched: false, expenseData: exp },
       },
     });
     onClose();

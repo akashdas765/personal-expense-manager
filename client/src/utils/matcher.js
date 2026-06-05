@@ -65,7 +65,9 @@ export function matchTransactions(bankTransactions, splitwiseExpenses, overrides
 
     // ── 2. Manual force-matched ────────────────────────────────────────────────
     if (ov?.splitwiseId) {
-      const forced = splitwiseExpenses.find(e => e.id === ov.splitwiseId);
+      // Look up in current month's list first; fall back to stored expense data
+      // so links to expenses from OTHER months (via the all-expenses picker) still work
+      const forced = splitwiseExpenses.find(e => e.id === ov.splitwiseId) || ov.expenseData;
       if (forced) {
         result.push({
           ...txn,
