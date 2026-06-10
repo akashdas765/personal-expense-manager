@@ -1,15 +1,14 @@
 import { createContext, useContext, useReducer, useCallback, useEffect } from 'react';
 import { getMonthRange, prevMonth, nextMonth } from '../utils/formatters';
 import { matchTransactions, computeSummary } from '../utils/matcher';
-import { fetchSplitwiseUser, DEFAULT_API_KEY } from '../services/apiService';
+import { fetchSplitwiseUser } from '../services/apiService';
 import { isPaymentTransaction } from '../utils/paymentDetector';
 
 const LS_KEY = 'expense_mgr_v1';
 
 // ── State shape ───────────────────────────────────────────────────────────────
 const initialState = {
-  // Auth — key is hardcoded; app auto-connects on first load
-  splitwiseApiKey: DEFAULT_API_KEY,
+  splitwiseApiKey: '',
   splitwiseUser:   null,
   splitwiseGroups: [],
 
@@ -192,14 +191,17 @@ export function ExpenseProvider({ children }) {
           }
         }
 
-        // Auto-connect: use saved user or fetch fresh
+        // Restore API key first so subsequent fetches use the correct key
+        const savedKey = saved.splitwiseApiKey || '';
+        if (savedKey) dispatch({ type: 'SET_API_KEY', payload: savedKey });
+
+        // Auto-connect: use saved user or fetch fresh with saved key
         const user = saved.splitwiseUser || null;
         if (user) {
           dispatch({ type: 'SET_SPLITWISE_USER', payload: user });
-        } else {
-          // First visit — auto-connect with hardcoded key
+        } else if (savedKey) {
           try {
-            const freshUser = await fetchSplitwiseUser(DEFAULT_API_KEY);
+            const freshUser = await fetchSplitwiseUser(savedKey);
             dispatch({ type: 'SET_SPLITWISE_USER', payload: freshUser });
           } catch { /* silently fail if offline or key invalid */ }
         }
