@@ -7,7 +7,8 @@ import { fetchSplitwiseExpenses } from '../../services/apiService';
 
 export default function SplitwisePicker({ transaction, onClose }) {
   const { state, dispatch } = useExpense();
-  const [search, setSearch] = useState('');
+  const [search, setSearch]     = useState('');
+  const [paidOnly, setPaidOnly] = useState(true);   // default: show only expenses I paid
 
   // Start with current month's expenses immediately, then load all in background
   const [allExpenses, setAllExpenses] = useState(state.splitwiseExpenses);
@@ -38,6 +39,8 @@ export default function SplitwisePicker({ transaction, onClose }) {
     const txnAmt = Math.abs(transaction.amount || 0);
     return [...allExpenses]
       .filter(e => {
+        // "Paid by me" filter: only expenses where I put money on my card
+        if (paidOnly && !(e.myPaidShare > 0)) return false;
         if (!search) return true;
         const q = search.toLowerCase();
         return e.description?.toLowerCase().includes(q) ||
@@ -52,7 +55,7 @@ export default function SplitwisePicker({ transaction, onClose }) {
         }
         return da - db;
       });
-  }, [allExpenses, search, transaction.amount]);
+  }, [allExpenses, search, paidOnly, transaction.amount]);
 
   function handleSelect(exp) {
     dispatch({
@@ -100,27 +103,45 @@ export default function SplitwisePicker({ transaction, onClose }) {
             <p className="text-slate-500 text-xs mt-1">Loading all expenses…</p>
           )}
 
-          {/* Search */}
-          <div className="relative mt-3">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
-            <input
-              type="text"
-              value={search}
-              onChange={e => setSearch(e.target.value)}
-              placeholder="Search expenses…"
-              autoFocus
-              className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-3 py-2.5
-                         text-white text-sm placeholder-slate-500 focus:outline-none focus:border-brand-500"
-            />
+          {/* Filter toggle + Search */}
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={() => setPaidOnly(v => !v)}
+              className={`flex-shrink-0 px-3 py-2 rounded-xl text-xs font-medium border transition-colors ${
+                paidOnly
+                  ? 'bg-brand-600 border-brand-500 text-white'
+                  : 'bg-slate-800 border-slate-700 text-slate-400 hover:border-slate-600'
+              }`}
+            >
+              💳 Paid by me
+            </button>
+            <div className="relative flex-1">
+              <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Search expenses…"
+                autoFocus
+                className="w-full bg-slate-800 border border-slate-700 rounded-xl pl-8 pr-3 py-2.5
+                           text-white text-sm placeholder-slate-500 focus:outline-none focus:border-brand-500"
+              />
+            </div>
           </div>
         </div>
 
         {/* Count badge */}
         {!loading && (
-          <div className="px-4 py-1.5 border-b border-slate-800/60">
+          <div className="px-4 py-1.5 border-b border-slate-800/60 flex items-center justify-between">
             <p className="text-slate-500 text-xs">
-              {sorted.length} expense{sorted.length !== 1 ? 's' : ''} — sorted by closest amount to {formatCurrency(transaction.amount)}
+              {sorted.length} expense{sorted.length !== 1 ? 's' : ''}
+              {paidOnly ? ' paid by you' : ''} — sorted by closest to {formatCurrency(transaction.amount)}
             </p>
+            {paidOnly && (
+              <button onClick={() => setPaidOnly(false)} className="text-slate-600 text-xs hover:text-slate-400 transition-colors">
+                Show all
+              </button>
+            )}
           </div>
         )}
 
