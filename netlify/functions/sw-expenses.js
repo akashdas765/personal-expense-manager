@@ -1,6 +1,4 @@
-const API_KEY = 'xucT3KflcCOkmuVlP4UtkSEvONRHVyclBoT6bLFM';
-const BASE    = 'https://secure.splitwise.com/api/v3.0';
-const HEADERS = { Authorization: `Bearer ${API_KEY}`, 'Content-Type': 'application/json' };
+const BASE = 'https://secure.splitwise.com/api/v3.0';
 
 const CORS = {
   'Access-Control-Allow-Origin':  '*',
@@ -14,6 +12,11 @@ export const handler = async (event) => {
     return { statusCode: 200, headers: CORS, body: '' };
   }
   try {
+    const apiKey = event.headers['x-splitwise-key'] || process.env.SPLITWISE_API_KEY;
+    if (!apiKey) {
+      return { statusCode: 401, headers: CORS, body: JSON.stringify({ error: 'No Splitwise API key provided' }) };
+    }
+    const HEADERS = { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' };
     const p = event.queryStringParameters || {};
 
     // Fetch current user to identify their shares

@@ -6,12 +6,10 @@ const isProd   = import.meta.env.PROD;
 const SW_BASE  = isProd ? '/.netlify/functions' : '/api/splitwise';
 const API_BASE = '/api';
 
-// Hardcoded key — used as fallback if none passed
-export const DEFAULT_API_KEY = 'xucT3KflcCOkmuVlP4UtkSEvONRHVyclBoT6bLFM';
+export const DEFAULT_API_KEY = '';
 
 function swHeaders(apiKey) {
-  // Only needed for the Express dev proxy (Netlify functions have the key baked in)
-  return isProd ? {} : { 'x-splitwise-key': apiKey || DEFAULT_API_KEY };
+  return { 'x-splitwise-key': apiKey || DEFAULT_API_KEY };
 }
 
 // ── Splitwise ─────────────────────────────────────────────────────────────────
